@@ -1,0 +1,3 @@
+[submodule "tictactoe-lib-rs"]
+	path = tictactoe-lib-rs
+	url = https://codeberg.org/jean553/tictactoe-lib-rs.git
