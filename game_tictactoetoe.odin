@@ -39,10 +39,11 @@ foreign lib {
 WINDOW_WIDTH, WINDOW_HEIGHT :: 800, 600
 CASE_WIDTH :: 50
 
+// color palette: https://colorhunt.co/palette/134686ed3f27feb21afdf4e3
 CIRCLE_COLOR: rl.Color : {19, 70, 134, 255}
-CIRCLE_COLOR_BACK: rl.Color : {19, 70, 134, 100}
+CIRCLE_COLOR_BACK: rl.Color : {141, 161, 186, 255}
 CROSS_COLOR: rl.Color : {237, 63, 39, 255}
-CROSS_COLOR_BACK: rl.Color : {237, 63, 39, 100}
+CROSS_COLOR_BACK: rl.Color : {227, 158, 149, 255}
 HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
 
 
@@ -74,7 +75,7 @@ draw :: proc() {
     defer rl.EndDrawing()
 
     rl.ClearBackground({220, 220, 220, 255})
-    rl.DrawText("Tic-Tac Toe-Toe!", 200, 20, 40, rl.BLUE)
+    rl.DrawText("Tic-Tac Toe-Toe!", 200, 20, 40, CIRCLE_COLOR)
 
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
