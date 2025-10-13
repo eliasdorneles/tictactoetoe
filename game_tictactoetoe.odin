@@ -74,32 +74,21 @@ draw :: proc() {
     rl.BeginDrawing()
     defer rl.EndDrawing()
 
-    rl.ClearBackground({220, 220, 220, 255})
-    rl.DrawText("Tic-Tac Toe-Toe!", 200, 20, 40, CIRCLE_COLOR)
+    rl.ClearBackground({240, 240, 240, 255})
+    rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
 
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
             rect := miniBoardRects[i][j]
+            pos := rl.Vector2 { f32(rect.x), f32(rect.y) }
             if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
                 rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
             }
             if game.winners[i][j] == .CIRCLE {
-                center := rl.Vector2 {
-                    f32(rect.x + rect.width / 2),
-                    f32(rect.y + rect.height / 2),
-                }
-                rl.DrawRing(center, 45, 60, 0, 360, 0, CIRCLE_COLOR_BACK)
+                rl.DrawTextureEx(circleTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
             }
             if game.winners[i][j] == .CROSS {
-                padding: f32 = 8 * 3
-                startPos := rl.Vector2{(rect.x + padding), (rect.y + padding)}
-                endPos := rl.Vector2 {
-                    (rect.x + rect.width - padding),
-                    (rect.y + rect.height - padding),
-                }
-                rl.DrawLineEx(startPos, endPos, 15, CROSS_COLOR_BACK)
-                startPos.y, endPos.y = endPos.y, startPos.y
-                rl.DrawLineEx(startPos, endPos, 15, CROSS_COLOR_BACK)
+                rl.DrawTextureEx(crossTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
             }
         }
     }
@@ -109,23 +98,12 @@ draw :: proc() {
         for j := 0; j < 9; j += 1 {
             rect := boardRects[i][j]
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
+            pos := rl.Vector2 { f32(rect.x), f32(rect.y) } + 2
             if game.board[i][j] == .CIRCLE_PIN {
-                center := rl.Vector2 {
-                    f32(rect.x + rect.width / 2),
-                    f32(rect.y + rect.height / 2),
-                }
-                rl.DrawRing(center, 15, 20, 0, 360, 0, CIRCLE_COLOR)
+                rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
             }
             if game.board[i][j] == .CROSS_PIN {
-                padding: f32 = 8
-                startPos := rl.Vector2{(rect.x + padding), (rect.y + padding)}
-                endPos := rl.Vector2 {
-                    (rect.x + rect.width - padding),
-                    (rect.y + rect.height - padding),
-                }
-                rl.DrawLineEx(startPos, endPos, 5, CROSS_COLOR)
-                startPos.y, endPos.y = endPos.y, startPos.y
-                rl.DrawLineEx(startPos, endPos, 5, CROSS_COLOR)
+                rl.DrawTextureEx(crossTx, pos, 0, 0.25, {255, 255, 255, 255})
             }
         }
     }
@@ -167,17 +145,26 @@ initBoardRects :: proc() {
 boardRects: [9][9]rl.Rectangle
 miniBoardRects: [3][3]rl.Rectangle
 game: TictactoeGame
+crossTx: rl.Texture
+circleTx: rl.Texture
+
 
 main :: proc() {
-    game = tictactoe_init()
-    initBoardRects()
     rl.SetConfigFlags({.VSYNC_HINT})
-
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
     defer rl.CloseWindow()
 
+    // load assets
+    crossTx = rl.LoadTexture("images/cross.png")
+    defer rl.UnloadTexture(crossTx)
+    circleTx = rl.LoadTexture("images/circle.png")
+    defer rl.UnloadTexture(circleTx)
+
     rl.InitAudioDevice()
     defer rl.CloseAudioDevice()
+
+    game = tictactoe_init()
+    initBoardRects()
 
     rl.SetTargetFPS(60)
 
