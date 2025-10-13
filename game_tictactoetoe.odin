@@ -39,6 +39,13 @@ foreign lib {
 WINDOW_WIDTH, WINDOW_HEIGHT :: 800, 600
 CASE_WIDTH :: 50
 
+CIRCLE_COLOR: rl.Color : {19, 70, 134, 255}
+CIRCLE_COLOR_BACK: rl.Color : {19, 70, 134, 100}
+CROSS_COLOR: rl.Color : {237, 63, 39, 255}
+CROSS_COLOR_BACK: rl.Color : {237, 63, 39, 100}
+HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
+
+
 restart :: proc() {
 }
 
@@ -51,6 +58,7 @@ update :: proc() {
                 if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
                     tictactoe_play(&game, i, j)
                     fmt.println("target Board is now", game.targetBoard)
+                    fmt.println("winners", game.winners)
                 }
             }
         }
@@ -65,14 +73,32 @@ draw :: proc() {
     rl.BeginDrawing()
     defer rl.EndDrawing()
 
-    rl.ClearBackground({200, 200, 200, 255})
+    rl.ClearBackground({220, 220, 220, 255})
     rl.DrawText("Tic-Tac Toe-Toe!", 200, 20, 40, rl.BLUE)
 
-    highlightColor: rl.Color = {255, 255, 200, 255}
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
+            rect := miniBoardRects[i][j]
             if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
-                rl.DrawRectangleRec(miniBoardRects[i][j], highlightColor)
+                rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
+            }
+            if game.winners[i][j] == .CIRCLE {
+                center := rl.Vector2 {
+                    f32(rect.x + rect.width / 2),
+                    f32(rect.y + rect.height / 2),
+                }
+                rl.DrawRing(center, 45, 60, 0, 360, 0, CIRCLE_COLOR_BACK)
+            }
+            if game.winners[i][j] == .CROSS {
+                padding: f32 = 8 * 3
+                startPos := rl.Vector2{(rect.x + padding), (rect.y + padding)}
+                endPos := rl.Vector2 {
+                    (rect.x + rect.width - padding),
+                    (rect.y + rect.height - padding),
+                }
+                rl.DrawLineEx(startPos, endPos, 15, CROSS_COLOR_BACK)
+                startPos.y, endPos.y = endPos.y, startPos.y
+                rl.DrawLineEx(startPos, endPos, 15, CROSS_COLOR_BACK)
             }
         }
     }
@@ -87,7 +113,7 @@ draw :: proc() {
                     f32(rect.x + rect.width / 2),
                     f32(rect.y + rect.height / 2),
                 }
-                rl.DrawRing(center, 15, 20, 0, 360, 0, rl.DARKGREEN)
+                rl.DrawRing(center, 15, 20, 0, 360, 0, CIRCLE_COLOR)
             }
             if game.board[i][j] == .CROSS_PIN {
                 padding: f32 = 8
@@ -96,9 +122,9 @@ draw :: proc() {
                     (rect.x + rect.width - padding),
                     (rect.y + rect.height - padding),
                 }
-                rl.DrawLineEx(startPos, endPos, 5, rl.DARKBROWN)
+                rl.DrawLineEx(startPos, endPos, 5, CROSS_COLOR)
                 startPos.y, endPos.y = endPos.y, startPos.y
-                rl.DrawLineEx(startPos, endPos, 5, rl.DARKBROWN)
+                rl.DrawLineEx(startPos, endPos, 5, CROSS_COLOR)
             }
         }
     }
