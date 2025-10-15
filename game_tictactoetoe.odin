@@ -3,6 +3,7 @@ package raylib_thingie
 import "core:c"
 import "core:fmt"
 import "core:math"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
@@ -58,6 +59,7 @@ update :: proc() {
             for j: u8 = 0; j < 9; j += 1 {
                 if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
                     tictactoe_play(&game, i, j)
+                    fmt.println("i =", i, "j =", j)
                     fmt.println("target Board is now", game.targetBoard)
                     fmt.println("winners", game.winners)
                 }
@@ -80,8 +82,9 @@ draw :: proc() {
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
             rect := miniBoardRects[i][j]
-            pos := rl.Vector2 { f32(rect.x), f32(rect.y) }
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
             if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
+                // TODO: need to check if board isn't already full
                 rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
             }
             if game.winners[i][j] == .CIRCLE {
@@ -98,7 +101,21 @@ draw :: proc() {
         for j := 0; j < 9; j += 1 {
             rect := boardRects[i][j]
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
-            pos := rl.Vector2 { f32(rect.x), f32(rect.y) } + 2
+
+            // DEBUG: uncomment to see the row and column values in the board
+            // builder: strings.Builder
+            // defer strings.builder_destroy(&builder)
+            // fmt.sbprintf(&builder, "i=%d j=%d", i, j)
+            //
+            // rl.DrawText(
+            //     strings.clone_to_cstring(strings.to_string(builder)),
+            //     i32(rect.x) + 5,
+            //     i32(rect.y) + 5,
+            //     12,
+            //     rl.RED,
+            // )
+
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
             if game.board[i][j] == .CIRCLE_PIN {
                 rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
             }
@@ -117,10 +134,10 @@ initBoardRects :: proc() {
         for j := 0; j < 9; j += 1 {
             boardRects[i][j] = rl.Rectangle {
                 x      = f32(
-                    startX + CASE_WIDTH * i + (i / 3) * padding + i * innerPadding,
+                    startX + CASE_WIDTH * j + (j / 3) * padding + j * innerPadding,
                 ),
                 y      = f32(
-                    startY + CASE_WIDTH * j + (j / 3) * padding + j * innerPadding,
+                    startY + CASE_WIDTH * i + (i / 3) * padding + i * innerPadding,
                 ),
                 width  = CASE_WIDTH,
                 height = CASE_WIDTH,

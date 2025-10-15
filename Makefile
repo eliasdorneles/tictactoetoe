@@ -9,6 +9,10 @@ run:  ## Run the Tic Tac Toe game
 tictactoetoe: game_tictactoetoe.odin  ## Build the Tic Tac Toe game executable
 	odin build game_tictactoetoe.odin -file -out:tictactoetoe
 
+.PHONY: update-lib
+update-lib:
+	git submodule update --remote
+
 # Implements this pattern for autodocumenting Makefiles:
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 #
