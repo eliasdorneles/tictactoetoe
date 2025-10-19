@@ -24,6 +24,10 @@ build-web:
 .PHONY: build
 build: build-web build-desktop  ## Build web and desktop targets
 
+release-web: build-web
+	uvx ghp-import -m "Update web build" build/web
+	git push github gh-pages --force
+
 # Implements this pattern for autodocumenting Makefiles:
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 #
