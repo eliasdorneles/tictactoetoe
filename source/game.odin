@@ -1,13 +1,21 @@
-package raylib_thingie
+package game
 
 import "core:c"
 import "core:fmt"
-import "core:math"
-import "core:strings"
+// import "core:math"
+// import "core:strings"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
-foreign import lib "./tictactoe-lib-rs/tictactoe-lib-rs/target/release/libtictactoe_lib_rs.a"
+LIB_TICTACTOE :: #config(
+    LIB_TICTACTOE,
+    "./tictactoe-lib-rs/tictactoe-lib-rs/target/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a",
+)
+when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
+    foreign import lib {LIB_TICTACTOE}
+} else {
+    foreign import lib "../tictactoe-lib-rs/tictactoe-lib-rs/target/release/libtictactoe_lib_rs.a"
+}
 
 Case :: enum c.int {
     BLANK      = 0,
@@ -26,9 +34,10 @@ TictactoeGame :: struct {
     winners:       [3][3]PlayerType,
     currentPlayer: PlayerType,
     targetBoard:   i8, // -1, when initialized, otherwise 0..8, in L-R, T-D order
+    fullBoards:    [9]bool,
 }
 
-@(default_calling_convention = "c", link_prefix = "")
+@(default_calling_convention = "c")
 foreign lib {
     tictactoe_init :: proc() -> TictactoeGame ---
     tictactoe_play :: proc(game: ^TictactoeGame, row: u8, column: u8) ---
@@ -47,84 +56,12 @@ CROSS_COLOR: rl.Color : {237, 63, 39, 255}
 CROSS_COLOR_BACK: rl.Color : {227, 158, 149, 255}
 HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
 
-
-restart :: proc() {
-}
-
-update :: proc() {
-    dt := rl.GetFrameTime()
-    if rl.IsMouseButtonReleased(rl.MouseButton.LEFT) {
-        pos := rl.GetMousePosition()
-        for i: u8 = 0; i < 9; i += 1 {
-            for j: u8 = 0; j < 9; j += 1 {
-                if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
-                    tictactoe_play(&game, i, j)
-                    fmt.println("i =", i, "j =", j)
-                    fmt.println("target Board is now", game.targetBoard)
-                    fmt.println("winners", game.winners)
-                }
-            }
-        }
-    }
-}
-
-drawCase :: proc(game: ^TictactoeGame, i, j: int) {
-
-}
-
-draw :: proc() {
-    rl.BeginDrawing()
-    defer rl.EndDrawing()
-
-    rl.ClearBackground({240, 240, 240, 255})
-    rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
-
-    for i := 0; i < 3; i += 1 {
-        for j := 0; j < 3; j += 1 {
-            rect := miniBoardRects[i][j]
-            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
-            if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
-                // TODO: need to check if board isn't already full
-                rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
-            }
-            if game.winners[i][j] == .CIRCLE {
-                rl.DrawTextureEx(circleTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
-            }
-            if game.winners[i][j] == .CROSS {
-                rl.DrawTextureEx(crossTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
-            }
-        }
-    }
-
-    thickness := 2
-    for i := 0; i < 9; i += 1 {
-        for j := 0; j < 9; j += 1 {
-            rect := boardRects[i][j]
-            rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
-
-            // DEBUG: uncomment to see the row and column values in the board
-            // builder: strings.Builder
-            // defer strings.builder_destroy(&builder)
-            // fmt.sbprintf(&builder, "i=%d j=%d", i, j)
-            //
-            // rl.DrawText(
-            //     strings.clone_to_cstring(strings.to_string(builder)),
-            //     i32(rect.x) + 5,
-            //     i32(rect.y) + 5,
-            //     12,
-            //     rl.RED,
-            // )
-
-            pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
-            if game.board[i][j] == .CIRCLE_PIN {
-                rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
-            }
-            if game.board[i][j] == .CROSS_PIN {
-                rl.DrawTextureEx(crossTx, pos, 0, 0.25, {255, 255, 255, 255})
-            }
-        }
-    }
-}
+run: bool
+boardRects: [9][9]rl.Rectangle
+miniBoardRects: [3][3]rl.Rectangle
+game: TictactoeGame
+crossTx: rl.Texture
+circleTx: rl.Texture
 
 initBoardRects :: proc() {
     innerPadding := 1
@@ -144,6 +81,7 @@ initBoardRects :: proc() {
             }
         }
     }
+
     miniBoardWidth := boardRects[0][0].width * 3
     miniBoardHeight := boardRects[0][0].height * 3
     for i := 0; i < 3; i += 1 {
@@ -159,36 +97,100 @@ initBoardRects :: proc() {
     }
 }
 
-boardRects: [9][9]rl.Rectangle
-miniBoardRects: [3][3]rl.Rectangle
-game: TictactoeGame
-crossTx: rl.Texture
-circleTx: rl.Texture
-
-
-main :: proc() {
-    rl.SetConfigFlags({.VSYNC_HINT})
+init :: proc() {
+    run = true
+    rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
-    defer rl.CloseWindow()
 
     // load assets
-    crossTx = rl.LoadTexture("images/cross.png")
-    defer rl.UnloadTexture(crossTx)
-    circleTx = rl.LoadTexture("images/circle.png")
-    defer rl.UnloadTexture(circleTx)
-
-    rl.InitAudioDevice()
-    defer rl.CloseAudioDevice()
+    crossTx = rl.LoadTexture("assets/cross.png")
+    circleTx = rl.LoadTexture("assets/circle.png")
 
     game = tictactoe_init()
     initBoardRects()
 
     rl.SetTargetFPS(60)
+}
 
-    restart()
-
-    for !rl.WindowShouldClose() {
-        update()
-        draw()
+update :: proc() {
+    // handle input and update game state
+    // dt := rl.GetFrameTime()
+    if rl.IsMouseButtonReleased(rl.MouseButton.LEFT) {
+        pos := rl.GetMousePosition()
+        for i: u8 = 0; i < 9; i += 1 {
+            for j: u8 = 0; j < 9; j += 1 {
+                if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
+                    fmt.println("row =", i, "column =", j)
+                    tictactoe_play(&game, i, j)
+                    fmt.println("target Board is now", game.targetBoard)
+                    fmt.println("winners", game.winners)
+                }
+            }
+        }
     }
+
+
+    // draw
+    rl.BeginDrawing()
+    defer rl.EndDrawing()
+
+    rl.ClearBackground({240, 240, 240, 255})
+    rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
+
+    for i := 0; i < 3; i += 1 {
+        for j := 0; j < 3; j += 1 {
+            rect := miniBoardRects[i][j]
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
+            if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
+                rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
+            }
+            if game.winners[i][j] == .CIRCLE {
+                rl.DrawTextureEx(circleTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
+            }
+            if game.winners[i][j] == .CROSS {
+                rl.DrawTextureEx(crossTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
+            }
+        }
+    }
+
+    thickness := 2
+    for i := 0; i < 9; i += 1 {
+        for j := 0; j < 9; j += 1 {
+            rect := boardRects[i][j]
+            rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
+            if game.board[i][j] == .CIRCLE_PIN {
+                rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
+            }
+            if game.board[i][j] == .CROSS_PIN {
+                rl.DrawTextureEx(crossTx, pos, 0, 0.25, {255, 255, 255, 255})
+            }
+        }
+    }
+
+    // Anything allocated using temp allocator is invalid after this.
+    free_all(context.temp_allocator)
+}
+
+// In a web build, this is called when browser changes size. Remove the
+// `rl.SetWindowSize` call if you don't want a resizable game.
+parent_window_size_changed :: proc(w, h: int) {
+    rl.SetWindowSize(c.int(w), c.int(h))
+}
+
+shutdown :: proc() {
+    rl.UnloadTexture(crossTx)
+    rl.UnloadTexture(circleTx)
+    rl.CloseWindow()
+}
+
+should_run :: proc() -> bool {
+    when ODIN_OS != .JS {
+        // Never run this proc in browser. It contains a 16 ms sleep on web!
+        if rl.WindowShouldClose() {
+            run = false
+        }
+    }
+
+    return run
 }
