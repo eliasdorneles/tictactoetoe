@@ -55,6 +55,12 @@ CIRCLE_COLOR_BACK: rl.Color : {141, 161, 186, 255}
 CROSS_COLOR: rl.Color : {237, 63, 39, 255}
 CROSS_COLOR_BACK: rl.Color : {227, 158, 149, 255}
 HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
+GAME_BOARD_POS: [2]int : {150, 100}
+
+GameState :: struct {
+    playing: bool,
+    winner:  PlayerType,
+}
 
 run: bool
 boardRects: [9][9]rl.Rectangle
@@ -62,19 +68,25 @@ miniBoardRects: [3][3]rl.Rectangle
 game: TictactoeGame
 crossTx: rl.Texture
 circleTx: rl.Texture
+state: GameState
 
 initBoardRects :: proc() {
     innerPadding := 1
     padding := 4
-    startX, startY := 150, 80
     for i := 0; i < 9; i += 1 {
         for j := 0; j < 9; j += 1 {
             boardRects[i][j] = rl.Rectangle {
                 x      = f32(
-                    startX + CASE_WIDTH * j + (j / 3) * padding + j * innerPadding,
+                    GAME_BOARD_POS.x +
+                    CASE_WIDTH * j +
+                    (j / 3) * padding +
+                    j * innerPadding,
                 ),
                 y      = f32(
-                    startY + CASE_WIDTH * i + (i / 3) * padding + i * innerPadding,
+                    GAME_BOARD_POS.y +
+                    CASE_WIDTH * i +
+                    (i / 3) * padding +
+                    i * innerPadding,
                 ),
                 width  = CASE_WIDTH,
                 height = CASE_WIDTH,
@@ -99,7 +111,7 @@ initBoardRects :: proc() {
 
 init :: proc() {
     run = true
-    rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
+    rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
 
     // load assets
@@ -108,13 +120,61 @@ init :: proc() {
 
     game = tictactoe_init()
     initBoardRects()
+    state.playing = true
 
     rl.SetTargetFPS(60)
 }
 
-update :: proc() {
-    // handle input and update game state
-    // dt := rl.GetFrameTime()
+drawPlayerSymbol :: proc(
+    playerType: PlayerType,
+    pos: rl.Vector2,
+    scale: f32,
+    alpha: u8 = 255,
+) {
+    if playerType == .CIRCLE {
+        rl.DrawTextureEx(circleTx, pos, 0, scale, {255, 255, 255, alpha})
+    }
+    if playerType == .CROSS {
+        rl.DrawTextureEx(crossTx, pos, 0, scale, {255, 255, 255, alpha})
+    }
+}
+
+calcGameWinner :: proc() -> PlayerType {
+    // check rows
+    for row in 0 ..= 2 {
+        if game.winners[row][0] != .NONE &&
+           game.winners[row][0] == game.winners[row][1] &&
+           game.winners[row][0] == game.winners[row][2] {
+            return game.winners[row][0]
+        }
+    }
+    // check cols
+    for col in 0 ..= 2 {
+        if game.winners[0][col] != .NONE &&
+           game.winners[0][col] == game.winners[1][col] &&
+           game.winners[0][col] == game.winners[2][col] {
+            return game.winners[0][col]
+        }
+    }
+    // descending diagonal
+    if game.winners[0][0] != .NONE &&
+       game.winners[0][0] == game.winners[1][1] &&
+       game.winners[0][0] == game.winners[2][2] {
+        return game.winners[0][0]
+    }
+    // ascending diagonal
+    if game.winners[2][2] != .NONE &&
+       game.winners[2][2] == game.winners[1][1] &&
+       game.winners[2][2] == game.winners[0][2] {
+        return game.winners[2][2]
+    }
+    return PlayerType.NONE
+}
+
+play :: proc() {
+    if !state.playing {
+        return
+    }
     if rl.IsMouseButtonReleased(rl.MouseButton.LEFT) {
         pos := rl.GetMousePosition()
         for i: u8 = 0; i < 9; i += 1 {
@@ -129,7 +189,11 @@ update :: proc() {
         }
     }
 
+    state.winner = calcGameWinner()
+    state.playing = state.winner == .NONE
+}
 
+draw :: proc() {
     // draw
     rl.BeginDrawing()
     defer rl.EndDrawing()
@@ -137,22 +201,38 @@ update :: proc() {
     rl.ClearBackground({240, 240, 240, 255})
     rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
 
-    for i := 0; i < 3; i += 1 {
-        for j := 0; j < 3; j += 1 {
-            rect := miniBoardRects[i][j]
-            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
-            if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
-                rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
-            }
-            if game.winners[i][j] == .CIRCLE {
-                rl.DrawTextureEx(circleTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
-            }
-            if game.winners[i][j] == .CROSS {
-                rl.DrawTextureEx(crossTx, pos + 4, 0, 0.8, {255, 255, 255, 100})
+    {
+        pos: [2]f32 = {309, f32(GAME_BOARD_POS.y - 25)}
+        if state.winner == .NONE {
+            textColor := CIRCLE_COLOR if game.currentPlayer == .CIRCLE else CROSS_COLOR
+            rl.DrawText("Player turn:", i32(pos.x), i32(pos.y), 20, textColor)
+            pos.x += 130
+            drawPlayerSymbol(game.currentPlayer, pos, 0.1)
+        } else {
+            textColor := CIRCLE_COLOR if state.winner == .CIRCLE else CROSS_COLOR
+            rl.DrawText("WINNER:", i32(pos.x), i32(pos.y), 20, textColor)
+            pos.x += 90
+            drawPlayerSymbol(state.winner, pos, 0.1)
+        }
+    }
+
+    if state.playing {
+        // here we highlight the background of the target board(s)
+        for i := 0; i < 3; i += 1 {
+            for j := 0; j < 3; j += 1 {
+                rect := miniBoardRects[i][j]
+                pos := rl.Vector2{f32(rect.x), f32(rect.y)}
+                if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
+                    rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
+                }
+                if game.winners[i][j] != .NONE {
+                    drawPlayerSymbol(game.winners[i][j], pos + 4, 0.8, 100)
+                }
             }
         }
     }
 
+    // here we draw the board
     thickness := 2
     for i := 0; i < 9; i += 1 {
         for j := 0; j < 9; j += 1 {
@@ -160,23 +240,34 @@ update :: proc() {
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
             pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
             if game.board[i][j] == .CIRCLE_PIN {
-                rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
+                drawPlayerSymbol(.CIRCLE, pos, 0.25)
             }
             if game.board[i][j] == .CROSS_PIN {
-                rl.DrawTextureEx(crossTx, pos, 0, 0.25, {255, 255, 255, 255})
+                drawPlayerSymbol(.CROSS, pos, 0.25)
             }
         }
     }
+}
+
+update :: proc() {
+    // handle input and update game state
+    // dt := rl.GetFrameTime()
+    play()
+
+    // if state.winner == .CIRCLE {
+    //     rl.GuiLabel({10, 10, 200, 20}, "CIRCLE WINS")
+    // } else if state.winner == .CROSS {
+    //     rl.GuiLabel({10, 10, 200, 20}, "CROSS WINS")
+    // } else {
+    //     rl.GuiLabel({10, 10, 200, 20}, "playing...")
+    // }
+
+    draw()
 
     // Anything allocated using temp allocator is invalid after this.
     free_all(context.temp_allocator)
 }
 
-// In a web build, this is called when browser changes size. Remove the
-// `rl.SetWindowSize` call if you don't want a resizable game.
-parent_window_size_changed :: proc(w, h: int) {
-    rl.SetWindowSize(c.int(w), c.int(h))
-}
 
 shutdown :: proc() {
     rl.UnloadTexture(crossTx)
