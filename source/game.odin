@@ -58,9 +58,9 @@ HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
 GAME_BOARD_POS: [2]int : {150, 100}
 
 GameState :: struct {
-    playing:        bool,
+    playing:     bool,
     enableSound: bool,
-    winner:         PlayerType,
+    winner:      PlayerType,
 }
 
 run: bool
@@ -294,7 +294,11 @@ updateControls :: proc() {
     if rl.GuiButton({25, f32(GAME_BOARD_POS.y), 100, 40}, text) {
         restart()
     }
-    rl.GuiToggle({25, f32(GAME_BOARD_POS.y) + 60, 100, 40}, "#11#Toggle sound", &state.enableSound)
+    rl.GuiToggle(
+        {25, f32(GAME_BOARD_POS.y) + 60, 100, 40},
+        "#11#Toggle sound",
+        &state.enableSound,
+    )
 }
 
 update :: proc() {

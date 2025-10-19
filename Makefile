@@ -46,6 +46,11 @@ release-web: clean build-web
 	uvx ghp-import -m "Update web build" build/web
 	git push github gh-pages --force
 
+publish:  # Push code and publish new version
+	git push
+	git push github
+	make release-web
+
 # Implements this pattern for autodocumenting Makefiles:
 # https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 #
