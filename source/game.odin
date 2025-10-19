@@ -118,11 +118,16 @@ init :: proc() {
     crossTx = rl.LoadTexture("assets/cross.png")
     circleTx = rl.LoadTexture("assets/circle.png")
 
-    game = tictactoe_init()
-    initBoardRects()
-    state.playing = true
+    restart()
 
     rl.SetTargetFPS(60)
+}
+
+restart :: proc() {
+    game = tictactoe_init()
+    state.playing = true
+    state.winner = .NONE
+    initBoardRects()
 }
 
 drawPlayerSymbol :: proc(
@@ -193,14 +198,7 @@ play :: proc() {
     state.playing = state.winner == .NONE
 }
 
-draw :: proc() {
-    // draw
-    rl.BeginDrawing()
-    defer rl.EndDrawing()
-
-    rl.ClearBackground({240, 240, 240, 255})
-    rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
-
+drawGame :: proc() {
     {
         pos: [2]f32 = {309, f32(GAME_BOARD_POS.y - 25)}
         if state.winner == .NONE {
@@ -252,8 +250,21 @@ draw :: proc() {
 update :: proc() {
     // handle input and update game state
     // dt := rl.GetFrameTime()
+    text: cstring = "#74#Restart"
+    if state.winner != .NONE {
+        text = "#74#Play again"
+    }
+    if rl.GuiButton({25, f32(GAME_BOARD_POS.y), 100, 40}, text) {
+        restart()
+    }
+
     play()
 
+    rl.BeginDrawing()
+    defer rl.EndDrawing()
+
+    rl.ClearBackground({240, 240, 240, 255})
+    rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
     // if state.winner == .CIRCLE {
     //     rl.GuiLabel({10, 10, 200, 20}, "CIRCLE WINS")
     // } else if state.winner == .CROSS {
@@ -262,7 +273,7 @@ update :: proc() {
     //     rl.GuiLabel({10, 10, 200, 20}, "playing...")
     // }
 
-    draw()
+    drawGame()
 
     // Anything allocated using temp allocator is invalid after this.
     free_all(context.temp_allocator)
@@ -273,6 +284,11 @@ shutdown :: proc() {
     rl.UnloadTexture(crossTx)
     rl.UnloadTexture(circleTx)
     rl.CloseWindow()
+}
+
+parent_window_size_changed :: proc(w, h: int) {
+    // XXX: uncomment if game should be resizable
+    // rl.SetWindowSize(c.int(w), c.int(h))
 }
 
 should_run :: proc() -> bool {
