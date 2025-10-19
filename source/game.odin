@@ -127,9 +127,9 @@ init :: proc() {
     crossTx = rl.LoadTexture("assets/cross.png")
     circleTx = rl.LoadTexture("assets/circle.png")
 
-    playerMoveSound = rl.LoadSound("assets/playerMove.mp3")
-    playerWinSound = rl.LoadSound("assets/win.mp3")
-    smallWinSound = rl.LoadSound("assets/smallWin.mp3")
+    playerMoveSound = rl.LoadSound("assets/play.wav")
+    playerWinSound = rl.LoadSound("assets/win.wav")
+    smallWinSound = rl.LoadSound("assets/smallWin.wav")
     rl.SetSoundVolume(playerMoveSound, 0.5)
     rl.SetSoundVolume(playerWinSound, 0.5)
     rl.SetSoundVolume(smallWinSound, 0.5)
