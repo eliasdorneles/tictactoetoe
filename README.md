@@ -13,6 +13,10 @@ implemented in the library
 How to run
 ==========
 
+You can [play the online version here](https://eliasdorneles.com/tictactoetoe/).
+
+To build and run the desktop version, follow these steps:
+
 1. Install [Odin](https://odin-lang.org/), if you don't have it already.
 
 2. Then, download the submodule deps:
@@ -22,7 +26,7 @@ git submodule init
 git submodule update
 ```
 
-3. Run with: `odin run game_tictactoetoe.odin -file`
+3. Build and run with: `make run`
 
 
 History
