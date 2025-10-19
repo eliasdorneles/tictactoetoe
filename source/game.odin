@@ -111,7 +111,10 @@ initBoardRects :: proc() {
 
 init :: proc() {
     run = true
-    rl.SetConfigFlags({.VSYNC_HINT})
+    // NOTE: we don't truly need the window to be resizable, but if we leave
+    // don't leave the window be resizable, for some reason CPU usage increases
+    // wildly on Firefox when using the WASM build
+    rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
 
     // load assets
@@ -289,7 +292,6 @@ shutdown :: proc() {
 }
 
 parent_window_size_changed :: proc(w, h: int) {
-    // XXX: uncomment if game should be resizable
     rl.SetWindowSize(c.int(w), c.int(h))
 }
 
