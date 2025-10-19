@@ -176,7 +176,17 @@ calcGameWinner :: proc() -> PlayerType {
     return PlayerType.NONE
 }
 
-play :: proc() {
+play :: proc(row, column: u8) {
+    fmt.println("row =", row, "column =", column)
+    tictactoe_play(&game, row, column)
+    fmt.println("target Board is now", game.targetBoard)
+    fmt.println("winners", game.winners)
+
+    state.winner = calcGameWinner()
+    state.playing = state.winner == .NONE
+}
+
+handleInput :: proc() {
     if !state.playing {
         return
     }
@@ -185,17 +195,11 @@ play :: proc() {
         for i: u8 = 0; i < 9; i += 1 {
             for j: u8 = 0; j < 9; j += 1 {
                 if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
-                    fmt.println("row =", i, "column =", j)
-                    tictactoe_play(&game, i, j)
-                    fmt.println("target Board is now", game.targetBoard)
-                    fmt.println("winners", game.winners)
+                    play(i, j)
                 }
             }
         }
     }
-
-    state.winner = calcGameWinner()
-    state.playing = state.winner == .NONE
 }
 
 drawGame :: proc() {
@@ -247,9 +251,7 @@ drawGame :: proc() {
     }
 }
 
-update :: proc() {
-    // handle input and update game state
-    // dt := rl.GetFrameTime()
+updateControls :: proc() {
     text: cstring = "#74#Restart"
     if state.winner != .NONE {
         text = "#74#Play again"
@@ -257,21 +259,21 @@ update :: proc() {
     if rl.GuiButton({25, f32(GAME_BOARD_POS.y), 100, 40}, text) {
         restart()
     }
+}
 
-    play()
+update :: proc() {
+    // handle input and update game state
+    // dt := rl.GetFrameTime()
+    handleInput()
 
     rl.BeginDrawing()
     defer rl.EndDrawing()
 
     rl.ClearBackground({240, 240, 240, 255})
     rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
-    // if state.winner == .CIRCLE {
-    //     rl.GuiLabel({10, 10, 200, 20}, "CIRCLE WINS")
-    // } else if state.winner == .CROSS {
-    //     rl.GuiLabel({10, 10, 200, 20}, "CROSS WINS")
-    // } else {
-    //     rl.GuiLabel({10, 10, 200, 20}, "playing...")
-    // }
+
+    // TODO: it seems this also works before rl.beginDrawing(), why should it be here??
+    updateControls()
 
     drawGame()
 
@@ -288,7 +290,7 @@ shutdown :: proc() {
 
 parent_window_size_changed :: proc(w, h: int) {
     // XXX: uncomment if game should be resizable
-    // rl.SetWindowSize(c.int(w), c.int(h))
+    rl.SetWindowSize(c.int(w), c.int(h))
 }
 
 should_run :: proc() -> bool {
