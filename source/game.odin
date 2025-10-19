@@ -58,8 +58,9 @@ HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
 GAME_BOARD_POS: [2]int : {150, 100}
 
 GameState :: struct {
-    playing: bool,
-    winner:  PlayerType,
+    playing:        bool,
+    enableSound: bool,
+    winner:         PlayerType,
 }
 
 run: bool
@@ -69,6 +70,9 @@ game: TictactoeGame
 crossTx: rl.Texture
 circleTx: rl.Texture
 state: GameState
+smallWinSound: rl.Sound
+playerWinSound: rl.Sound
+playerMoveSound: rl.Sound
 
 initBoardRects :: proc() {
     innerPadding := 1
@@ -117,11 +121,21 @@ init :: proc() {
     rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
 
+    rl.InitAudioDevice()
+
     // load assets
     crossTx = rl.LoadTexture("assets/cross.png")
     circleTx = rl.LoadTexture("assets/circle.png")
 
+    playerMoveSound = rl.LoadSound("assets/playerMove.mp3")
+    playerWinSound = rl.LoadSound("assets/win.mp3")
+    smallWinSound = rl.LoadSound("assets/smallWin.mp3")
+    rl.SetSoundVolume(playerMoveSound, 0.5)
+    rl.SetSoundVolume(playerWinSound, 0.5)
+    rl.SetSoundVolume(smallWinSound, 0.5)
+
     restart()
+    state.enableSound = true
 
     rl.SetTargetFPS(60)
 }
@@ -181,12 +195,30 @@ calcGameWinner :: proc() -> PlayerType {
 
 play :: proc(row, column: u8) {
     fmt.println("row =", row, "column =", column)
+
+    boardWinnerBefore := game.winners[row / 3][column / 3]
+    fmt.println("winner before", boardWinnerBefore)
+
     tictactoe_play(&game, row, column)
+
+    boardWinnerAfter := game.winners[row / 3][column / 3]
+    fmt.println("winner after", boardWinnerAfter)
+
     fmt.println("target Board is now", game.targetBoard)
     fmt.println("winners", game.winners)
 
     state.winner = calcGameWinner()
     state.playing = state.winner == .NONE
+
+    if state.enableSound {
+        if state.winner != .NONE {
+            rl.PlaySound(playerWinSound)
+        } else if boardWinnerBefore != boardWinnerAfter {
+            rl.PlaySound(smallWinSound)
+        } else {
+            rl.PlaySound(playerMoveSound)
+        }
+    }
 }
 
 handleInput :: proc() {
@@ -262,6 +294,7 @@ updateControls :: proc() {
     if rl.GuiButton({25, f32(GAME_BOARD_POS.y), 100, 40}, text) {
         restart()
     }
+    rl.GuiToggle({25, f32(GAME_BOARD_POS.y) + 60, 100, 40}, "#11#Toggle sound", &state.enableSound)
 }
 
 update :: proc() {
@@ -288,6 +321,7 @@ update :: proc() {
 shutdown :: proc() {
     rl.UnloadTexture(crossTx)
     rl.UnloadTexture(circleTx)
+    rl.CloseAudioDevice()
     rl.CloseWindow()
 }
 
