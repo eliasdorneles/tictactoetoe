@@ -17,13 +17,14 @@ export EMSDK_QUIET=1
 # up in env.o
 #
 # Note that there is a rayGUI equivalent: -define:RAYGUI_WASM_LIB=env.o
-odin build source/main_web -target:js_wasm32 -build-mode:obj -define:RAYLIB_WASM_LIB=env.o -define:RAYGUI_WASM_LIB=env.o -vet -strict-style -out:$OUT_DIR/game.wasm.o
+odin build source/main_web -target:js_wasm32 -build-mode:obj -define:RAYLIB_WASM_LIB=env.o -define:RAYGUI_WASM_LIB=env.o -define:LIB_TICTACTOE=env.o -vet -strict-style -out:$OUT_DIR/game.wasm.o
 
 ODIN_PATH=$(odin root)
 
 cp $ODIN_PATH/core/sys/wasm/js/odin.js $OUT_DIR
 
-files="$OUT_DIR/game.wasm.o ${ODIN_PATH}/vendor/raylib/wasm/libraylib.a ${ODIN_PATH}/vendor/raylib/wasm/libraygui.a"
+LIB_TICTACTOE_PATH=./tictactoe-lib-rs/tictactoe-lib-rs/target/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a
+files="$OUT_DIR/game.wasm.o ${ODIN_PATH}/vendor/raylib/wasm/libraylib.a ${ODIN_PATH}/vendor/raylib/wasm/libraygui.a ${LIB_TICTACTOE_PATH}"
 
 # index_template.html contains the javascript code that calls the procedures in
 # source/main_web/main_web.odin

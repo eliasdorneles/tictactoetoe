@@ -6,7 +6,15 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
-foreign import lib "../tictactoe-lib-rs/tictactoe-lib-rs/target/release/libtictactoe_lib_rs.a"
+LIB_TICTACTOE :: #config(
+    LIB_TICTACTOE,
+    "./tictactoe-lib-rs/tictactoe-lib-rs/target/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a",
+)
+when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
+    foreign import lib {LIB_TICTACTOE}
+} else {
+    foreign import lib "../tictactoe-lib-rs/tictactoe-lib-rs/target/release/libtictactoe_lib_rs.a"
+}
 
 Case :: enum c.int {
     BLANK      = 0,
@@ -25,9 +33,10 @@ TictactoeGame :: struct {
     winners:       [3][3]PlayerType,
     currentPlayer: PlayerType,
     targetBoard:   i8, // -1, when initialized, otherwise 0..8, in L-R, T-D order
+    fullBoards:    [9]bool,
 }
 
-@(default_calling_convention = "c", link_prefix = "")
+@(default_calling_convention = "c")
 foreign lib {
     tictactoe_init :: proc() -> TictactoeGame ---
     tictactoe_play :: proc(game: ^TictactoeGame, row: u8, column: u8) ---
@@ -72,6 +81,7 @@ initBoardRects :: proc() {
             }
         }
     }
+
     miniBoardWidth := boardRects[0][0].width * 3
     miniBoardHeight := boardRects[0][0].height * 3
     for i := 0; i < 3; i += 1 {
@@ -89,15 +99,12 @@ initBoardRects :: proc() {
 
 init :: proc() {
     run = true
-    rl.SetConfigFlags({.VSYNC_HINT})
+    rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TicTac ToeToe!")
-    defer rl.CloseWindow()
 
     // load assets
     crossTx = rl.LoadTexture("assets/cross.png")
-    defer rl.UnloadTexture(crossTx)
     circleTx = rl.LoadTexture("assets/circle.png")
-    defer rl.UnloadTexture(circleTx)
 
     game = tictactoe_init()
     initBoardRects()
@@ -113,6 +120,7 @@ update :: proc() {
         for i: u8 = 0; i < 9; i += 1 {
             for j: u8 = 0; j < 9; j += 1 {
                 if rl.CheckCollisionPointRec(pos, boardRects[i][j]) {
+                    fmt.println("row =", i, "column =", j)
                     tictactoe_play(&game, i, j)
                     fmt.println("target Board is now", game.targetBoard)
                     fmt.println("winners", game.winners)
@@ -132,7 +140,7 @@ update :: proc() {
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
             rect := miniBoardRects[i][j]
-            pos := rl.Vector2 { f32(rect.x), f32(rect.y) }
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
             if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
                 rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
             }
@@ -150,7 +158,7 @@ update :: proc() {
         for j := 0; j < 9; j += 1 {
             rect := boardRects[i][j]
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
-            pos := rl.Vector2 { f32(rect.x), f32(rect.y) } + 2
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
             if game.board[i][j] == .CIRCLE_PIN {
                 rl.DrawTextureEx(circleTx, pos, 0, 0.25, {255, 255, 255, 255})
             }
@@ -171,6 +179,8 @@ parent_window_size_changed :: proc(w, h: int) {
 }
 
 shutdown :: proc() {
+    rl.UnloadTexture(crossTx)
+    rl.UnloadTexture(circleTx)
     rl.CloseWindow()
 }
 
@@ -184,4 +194,3 @@ should_run :: proc() -> bool {
 
     return run
 }
-
