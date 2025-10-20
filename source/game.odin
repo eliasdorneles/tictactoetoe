@@ -54,13 +54,18 @@ CIRCLE_COLOR: rl.Color : {19, 70, 134, 255}
 CIRCLE_COLOR_BACK: rl.Color : {141, 161, 186, 255}
 CROSS_COLOR: rl.Color : {237, 63, 39, 255}
 CROSS_COLOR_BACK: rl.Color : {227, 158, 149, 255}
-HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
+// HIGHLIGHT_COLOR: rl.Color : {253, 244, 227, 255}
+HIGHLIGHT_COLOR: rl.Color : {254, 178, 26, 220}
+BG_COLOR_DAY_MODE: rl.Color : {240, 240, 240, 255}
+BG_COLOR_DARK_MODE: rl.Color : {10, 10, 10, 255}
+
 GAME_BOARD_POS: [2]int : {150, 100}
 
 GameState :: struct {
     playing:     bool,
     enableSound: bool,
     winner:      PlayerType,
+    nightMode:   bool,
 }
 
 run: bool
@@ -75,8 +80,8 @@ playerWinSound: rl.Sound
 playerMoveSound: rl.Sound
 
 initBoardRects :: proc() {
-    innerPadding := 1
-    padding := 4
+    innerPadding := 2
+    padding := 8
     for i := 0; i < 9; i += 1 {
         for j := 0; j < 9; j += 1 {
             boardRects[i][j] = rl.Rectangle {
@@ -98,8 +103,8 @@ initBoardRects :: proc() {
         }
     }
 
-    miniBoardWidth := boardRects[0][0].width * 3
-    miniBoardHeight := boardRects[0][0].height * 3
+    miniBoardWidth := boardRects[0][0].width * 3 + 4
+    miniBoardHeight := boardRects[0][0].height * 3 + 4
     for i := 0; i < 3; i += 1 {
         for j := 0; j < 3; j += 1 {
             miniBoardRects[i][j] = rl.Rectangle {
@@ -295,8 +300,13 @@ updateControls :: proc() {
     }
     rl.GuiToggle(
         {25, f32(GAME_BOARD_POS.y) + 60, 100, 40},
-        "#11#Toggle sound",
+        "#122#Toggle sound",
         &state.enableSound,
+    )
+    rl.GuiToggle(
+        {25, f32(GAME_BOARD_POS.y) + 120, 100, 40},
+        "#94#Dark mode",
+        &state.nightMode,
     )
 }
 
@@ -308,7 +318,8 @@ update :: proc() {
     rl.BeginDrawing()
     defer rl.EndDrawing()
 
-    rl.ClearBackground({240, 240, 240, 255})
+    rl.ClearBackground(BG_COLOR_DARK_MODE if state.nightMode else BG_COLOR_DAY_MODE)
+
     rl.DrawText("Tic-Tac Toe-Toe!", 170, 20, 48, CIRCLE_COLOR)
 
     // TODO: it seems this also works before rl.beginDrawing(), why should it be here??
