@@ -18,9 +18,12 @@ when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
 }
 
 Case :: enum c.int {
-    BLANK      = 0,
-    CROSS_PIN  = 1,
-    CIRCLE_PIN = 2,
+    BLANK       = 0,
+    CROSS_PIN   = 1,
+    CIRCLE_PIN  = 2,
+    ROTATEBY90  = 3,
+    ROTATEBY180 = 4,
+    ROTATEBY270 = 5,
 }
 
 PlayerType :: enum c.int {
@@ -74,6 +77,9 @@ miniBoardRects: [3][3]rl.Rectangle
 game: TictactoeGame
 crossTx: rl.Texture
 circleTx: rl.Texture
+rotate1Tx: rl.Texture
+rotate2Tx: rl.Texture
+rotate3Tx: rl.Texture
 state: GameState
 smallWinSound: rl.Sound
 playerWinSound: rl.Sound
@@ -131,6 +137,9 @@ init :: proc() {
     // load assets
     crossTx = rl.LoadTexture("assets/cross.png")
     circleTx = rl.LoadTexture("assets/circle.png")
+    rotate1Tx = rl.LoadTexture("assets/rotate1x.png")
+    rotate2Tx = rl.LoadTexture("assets/rotate2x.png")
+    rotate3Tx = rl.LoadTexture("assets/rotate3x.png")
 
     playerMoveSound = rl.LoadSound("assets/play.wav")
     playerWinSound = rl.LoadSound("assets/win.wav")
@@ -141,6 +150,7 @@ init :: proc() {
 
     restart()
     state.enableSound = true
+    fmt.println("game.board", game.board)
 
     rl.SetTargetFPS(60)
 }
@@ -282,9 +292,14 @@ drawGame :: proc() {
             pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
             if game.board[i][j] == .CIRCLE_PIN {
                 drawPlayerSymbol(.CIRCLE, pos, 0.25)
-            }
-            if game.board[i][j] == .CROSS_PIN {
+            } else if game.board[i][j] == .CROSS_PIN {
                 drawPlayerSymbol(.CROSS, pos, 0.25)
+            } else if game.board[i][j] == .ROTATEBY90 {
+                rl.DrawTextureEx(rotate1Tx, pos, 0, 0.25, {255, 255, 255, 255})
+            } else if game.board[i][j] == .ROTATEBY180 {
+                rl.DrawTextureEx(rotate2Tx, pos, 0, 0.25, {255, 255, 255, 255})
+            } else if game.board[i][j] == .ROTATEBY270 {
+                rl.DrawTextureEx(rotate3Tx, pos, 0, 0.25, {255, 255, 255, 255})
             }
         }
     }

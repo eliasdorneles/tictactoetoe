@@ -3,6 +3,7 @@
 
 DESKTOP_OUT_DIR := build/desktop
 
+COMMON_ASSETS := $(wildcard assets/*.png assets/*.wav)
 COMMON_SOURCES := $(wildcard source/*.odin) .gitmodules
 DESKTOP_SOURCES := $(wildcard source/main_desktop/*.odin)
 WEB_SOURCES := $(wildcard source/main_web/*.odin)
@@ -18,7 +19,7 @@ run: build-desktop  ## Run the Tic Tac Toe game
 update-lib:  ## Update the tictactoe Rust library submodule
 	git submodule update --remote
 
-$(DESKTOP_TARGET): $(COMMON_SOURCES) $(DESKTOP_SOURCES)
+$(DESKTOP_TARGET): $(COMMON_SOURCES) $(COMMON_ASSETS) $(DESKTOP_SOURCES)
 	mkdir -p $(DESKTOP_OUT_DIR)
 	odin build source/main_desktop -vet -strict-style -out:$(DESKTOP_OUT_DIR)/tictactoetoe
 	cp -R ./assets/ $(DESKTOP_OUT_DIR)/assets/
@@ -26,7 +27,7 @@ $(DESKTOP_TARGET): $(COMMON_SOURCES) $(DESKTOP_SOURCES)
 
 build-desktop: $(DESKTOP_TARGET)  ## Build desktop-only target
 
-build/web: $(COMMON_SOURCES) $(WEB_SOURCES)
+build/web: $(COMMON_SOURCES) $(COMMON_ASSETS) $(WEB_SOURCES)
 	./build_web.sh
 
 build-web: build/web  ## Build web-only target
