@@ -253,18 +253,17 @@ drawGame :: proc() {
         }
     }
 
-    if state.playing {
-        // here we highlight the background of the target board(s)
-        for i := 0; i < 3; i += 1 {
-            for j := 0; j < 3; j += 1 {
-                rect := miniBoardRects[i][j]
-                pos := rl.Vector2{f32(rect.x), f32(rect.y)}
-                if game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j) {
-                    rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
-                }
-                if game.winners[i][j] != .NONE {
-                    drawPlayerSymbol(game.winners[i][j], pos + 4, 0.8, 100)
-                }
+    // draw backgrounds -- highlight target board(s) and board winners
+    for i := 0; i < 3; i += 1 {
+        for j := 0; j < 3; j += 1 {
+            rect := miniBoardRects[i][j]
+            pos := rl.Vector2{f32(rect.x), f32(rect.y)}
+            if state.playing &&
+               (game.targetBoard == -1 || game.targetBoard == i8(i * 3 + j)) {
+                rl.DrawRectangleRec(rect, HIGHLIGHT_COLOR)
+            }
+            if game.winners[i][j] != .NONE {
+                drawPlayerSymbol(game.winners[i][j], pos + 4, 0.8, 120)
             }
         }
     }
