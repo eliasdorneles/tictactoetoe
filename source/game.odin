@@ -194,15 +194,15 @@ calcGameWinner :: proc() -> PlayerType {
 }
 
 play :: proc(row, column: u8) {
-    fmt.println("row =", row, "column =", column)
+    fmt.println("play row =", row, "column =", column)
 
+    rowBefore := game.board[row][column]
     boardWinnerBefore := game.winners[row / 3][column / 3]
-    fmt.println("winner before", boardWinnerBefore)
 
     tictactoe_play(&game, row, column)
 
+    rowAfter := game.board[row][column]
     boardWinnerAfter := game.winners[row / 3][column / 3]
-    fmt.println("winner after", boardWinnerAfter)
 
     fmt.println("target Board is now", game.targetBoard)
     fmt.println("winners", game.winners)
@@ -215,7 +215,7 @@ play :: proc(row, column: u8) {
             rl.PlaySound(playerWinSound)
         } else if boardWinnerBefore != boardWinnerAfter {
             rl.PlaySound(smallWinSound)
-        } else {
+        } else if rowBefore != rowAfter {
             rl.PlaySound(playerMoveSound)
         }
     }
