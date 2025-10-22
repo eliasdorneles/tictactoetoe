@@ -84,6 +84,8 @@ state: GameState
 smallWinSound: rl.Sound
 playerWinSound: rl.Sound
 playerMoveSound: rl.Sound
+rollShortSound: rl.Sound
+rollLongSound: rl.Sound
 
 initBoardRects :: proc() {
     innerPadding := 2
@@ -144,13 +146,17 @@ init :: proc() {
     playerMoveSound = rl.LoadSound("assets/play.wav")
     playerWinSound = rl.LoadSound("assets/win.wav")
     smallWinSound = rl.LoadSound("assets/smallWin.wav")
+    rollShortSound = rl.LoadSound("assets/rollShort.wav")
+    rollLongSound = rl.LoadSound("assets/rollLong.wav")
     rl.SetSoundVolume(playerMoveSound, 0.5)
     rl.SetSoundVolume(playerWinSound, 0.5)
     rl.SetSoundVolume(smallWinSound, 0.5)
+    rl.SetSoundVolume(rollShortSound, 0.5)
+    rl.SetSoundVolume(rollLongSound, 0.5)
 
     restart()
     state.enableSound = true
-    fmt.println("game.board", game.board)
+    // fmt.println("game.board", game.board)
 
     rl.SetTargetFPS(60)
 }
@@ -231,7 +237,13 @@ play :: proc(row, column: u8) {
         } else if boardWinnerBefore != boardWinnerAfter {
             rl.PlaySound(smallWinSound)
         } else if rowBefore != rowAfter {
-            rl.PlaySound(playerMoveSound)
+            if rowBefore == .ROTATEBY90 {
+                rl.PlaySound(rollShortSound)
+            } else if rowBefore == .ROTATEBY180 || rowBefore == .ROTATEBY270 {
+                rl.PlaySound(rollLongSound)
+            } else {
+                rl.PlaySound(playerMoveSound)
+            }
         }
     }
 }
