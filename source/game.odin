@@ -3,7 +3,7 @@ package game
 import "core:c"
 import "core:fmt"
 // import "core:math"
-// import "core:strings"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
@@ -18,9 +18,12 @@ when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
 }
 
 Case :: enum c.int {
-    BLANK      = 0,
-    CROSS_PIN  = 1,
-    CIRCLE_PIN = 2,
+    BLANK       = 0,
+    CROSS_PIN   = 1,
+    CIRCLE_PIN  = 2,
+    ROTATEBY90  = 3,
+    ROTATEBY180 = 4,
+    ROTATEBY270 = 5,
 }
 
 PlayerType :: enum c.int {
@@ -39,9 +42,8 @@ TictactoeGame :: struct {
 
 @(default_calling_convention = "c")
 foreign lib {
-    tictactoe_init :: proc() -> TictactoeGame ---
+    tictactoe_init :: proc(rotationCellsAmount: u8) -> TictactoeGame ---
     tictactoe_play :: proc(game: ^TictactoeGame, row: u8, column: u8) ---
-    // tictactoe_check_victory :: proc(game: ^TictactoeGame) -> PlayerType ---
 }
 /* END foreign library declarations */
 
@@ -66,6 +68,7 @@ GameState :: struct {
     enableSound: bool,
     winner:      PlayerType,
     nightMode:   bool,
+    showCoords:  bool,
 }
 
 run: bool
@@ -74,10 +77,15 @@ miniBoardRects: [3][3]rl.Rectangle
 game: TictactoeGame
 crossTx: rl.Texture
 circleTx: rl.Texture
+rotate1Tx: rl.Texture
+rotate2Tx: rl.Texture
+rotate3Tx: rl.Texture
 state: GameState
 smallWinSound: rl.Sound
 playerWinSound: rl.Sound
 playerMoveSound: rl.Sound
+rollShortSound: rl.Sound
+rollLongSound: rl.Sound
 
 initBoardRects :: proc() {
     innerPadding := 2
@@ -131,22 +139,30 @@ init :: proc() {
     // load assets
     crossTx = rl.LoadTexture("assets/cross.png")
     circleTx = rl.LoadTexture("assets/circle.png")
+    rotate1Tx = rl.LoadTexture("assets/rotate1x.png")
+    rotate2Tx = rl.LoadTexture("assets/rotate2x.png")
+    rotate3Tx = rl.LoadTexture("assets/rotate3x.png")
 
     playerMoveSound = rl.LoadSound("assets/play.wav")
     playerWinSound = rl.LoadSound("assets/win.wav")
     smallWinSound = rl.LoadSound("assets/smallWin.wav")
+    rollShortSound = rl.LoadSound("assets/rollShort.wav")
+    rollLongSound = rl.LoadSound("assets/rollLong.wav")
     rl.SetSoundVolume(playerMoveSound, 0.5)
     rl.SetSoundVolume(playerWinSound, 0.5)
     rl.SetSoundVolume(smallWinSound, 0.5)
+    rl.SetSoundVolume(rollShortSound, 0.5)
+    rl.SetSoundVolume(rollLongSound, 0.5)
 
     restart()
     state.enableSound = true
+    // fmt.println("game.board", game.board)
 
     rl.SetTargetFPS(60)
 }
 
 restart :: proc() {
-    game = tictactoe_init()
+    game = tictactoe_init(50)
     state.playing = true
     state.winner = .NONE
     initBoardRects()
@@ -221,7 +237,13 @@ play :: proc(row, column: u8) {
         } else if boardWinnerBefore != boardWinnerAfter {
             rl.PlaySound(smallWinSound)
         } else if rowBefore != rowAfter {
-            rl.PlaySound(playerMoveSound)
+            if rowBefore == .ROTATEBY90 {
+                rl.PlaySound(rollShortSound)
+            } else if rowBefore == .ROTATEBY180 || rowBefore == .ROTATEBY270 {
+                rl.PlaySound(rollLongSound)
+            } else {
+                rl.PlaySound(playerMoveSound)
+            }
         }
     }
 }
@@ -275,16 +297,42 @@ drawGame :: proc() {
 
     // here we draw the board
     thickness := 2
+    nine_letters := "abcdefghi"
     for i := 0; i < 9; i += 1 {
         for j := 0; j < 9; j += 1 {
             rect := boardRects[i][j]
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
             pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
+
             if game.board[i][j] == .CIRCLE_PIN {
                 drawPlayerSymbol(.CIRCLE, pos, 0.25)
-            }
-            if game.board[i][j] == .CROSS_PIN {
+            } else if game.board[i][j] == .CROSS_PIN {
                 drawPlayerSymbol(.CROSS, pos, 0.25)
+            } else if game.board[i][j] == .ROTATEBY90 {
+                rl.DrawTextureEx(rotate1Tx, pos, 0, 0.25, {255, 255, 255, 150})
+            } else if game.board[i][j] == .ROTATEBY180 {
+                rl.DrawTextureEx(rotate2Tx, pos, 0, 0.25, {255, 255, 255, 150})
+            } else if game.board[i][j] == .ROTATEBY270 {
+                rl.DrawTextureEx(rotate3Tx, pos, 0, 0.25, {255, 255, 255, 150})
+            }
+
+            if state.showCoords {
+                builder: strings.Builder
+                fmt.sbprintf(&builder, "%c %d", nine_letters[j], i)
+                rl.DrawText(
+                    strings.clone_to_cstring(strings.to_string(builder)),
+                    i32(pos.x + rect.width - 31),
+                    i32(pos.y + rect.height - 21),
+                    17,
+                    BG_COLOR_DARK_MODE if state.nightMode else BG_COLOR_DAY_MODE,
+                )
+                rl.DrawText(
+                    strings.clone_to_cstring(strings.to_string(builder)),
+                    i32(pos.x + rect.width - 30),
+                    i32(pos.y + rect.height - 20),
+                    17,
+                    BG_COLOR_DAY_MODE if state.nightMode else BG_COLOR_DARK_MODE,
+                )
             }
         }
     }
@@ -307,6 +355,11 @@ updateControls :: proc() {
         {25, f32(GAME_BOARD_POS.y) + 120, 100, 40},
         "#94#Dark mode",
         &state.nightMode,
+    )
+    rl.GuiToggle(
+        {25, f32(GAME_BOARD_POS.y) + 180, 100, 40},
+        "#100#Show coords",
+        &state.showCoords,
     )
 }
 
