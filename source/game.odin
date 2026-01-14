@@ -3,7 +3,7 @@ package game
 import "core:c"
 import "core:fmt"
 // import "core:math"
-// import "core:strings"
+import "core:strings"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
@@ -42,9 +42,8 @@ TictactoeGame :: struct {
 
 @(default_calling_convention = "c")
 foreign lib {
-    tictactoe_init :: proc() -> TictactoeGame ---
+    tictactoe_init :: proc(rotationCellsAmount: u8) -> TictactoeGame ---
     tictactoe_play :: proc(game: ^TictactoeGame, row: u8, column: u8) ---
-    // tictactoe_check_victory :: proc(game: ^TictactoeGame) -> PlayerType ---
 }
 /* END foreign library declarations */
 
@@ -69,6 +68,7 @@ GameState :: struct {
     enableSound: bool,
     winner:      PlayerType,
     nightMode:   bool,
+    showCoords:  bool,
 }
 
 run: bool
@@ -162,7 +162,7 @@ init :: proc() {
 }
 
 restart :: proc() {
-    game = tictactoe_init()
+    game = tictactoe_init(50)
     state.playing = true
     state.winner = .NONE
     initBoardRects()
@@ -297,21 +297,42 @@ drawGame :: proc() {
 
     // here we draw the board
     thickness := 2
+    nine_letters := "abcdefghi"
     for i := 0; i < 9; i += 1 {
         for j := 0; j < 9; j += 1 {
             rect := boardRects[i][j]
             rl.DrawRectangleLinesEx(rect, f32(thickness), rl.DARKGRAY)
             pos := rl.Vector2{f32(rect.x), f32(rect.y)} + 2
+
             if game.board[i][j] == .CIRCLE_PIN {
                 drawPlayerSymbol(.CIRCLE, pos, 0.25)
             } else if game.board[i][j] == .CROSS_PIN {
                 drawPlayerSymbol(.CROSS, pos, 0.25)
             } else if game.board[i][j] == .ROTATEBY90 {
-                rl.DrawTextureEx(rotate1Tx, pos, 0, 0.25, {255, 255, 255, 255})
+                rl.DrawTextureEx(rotate1Tx, pos, 0, 0.25, {255, 255, 255, 150})
             } else if game.board[i][j] == .ROTATEBY180 {
-                rl.DrawTextureEx(rotate2Tx, pos, 0, 0.25, {255, 255, 255, 255})
+                rl.DrawTextureEx(rotate2Tx, pos, 0, 0.25, {255, 255, 255, 150})
             } else if game.board[i][j] == .ROTATEBY270 {
-                rl.DrawTextureEx(rotate3Tx, pos, 0, 0.25, {255, 255, 255, 255})
+                rl.DrawTextureEx(rotate3Tx, pos, 0, 0.25, {255, 255, 255, 150})
+            }
+
+            if state.showCoords {
+                builder: strings.Builder
+                fmt.sbprintf(&builder, "%c %d", nine_letters[j], i)
+                rl.DrawText(
+                    strings.clone_to_cstring(strings.to_string(builder)),
+                    i32(pos.x + rect.width - 31),
+                    i32(pos.y + rect.height - 21),
+                    17,
+                    BG_COLOR_DARK_MODE if state.nightMode else BG_COLOR_DAY_MODE,
+                )
+                rl.DrawText(
+                    strings.clone_to_cstring(strings.to_string(builder)),
+                    i32(pos.x + rect.width - 30),
+                    i32(pos.y + rect.height - 20),
+                    17,
+                    BG_COLOR_DAY_MODE if state.nightMode else BG_COLOR_DARK_MODE,
+                )
             }
         }
     }
@@ -334,6 +355,11 @@ updateControls :: proc() {
         {25, f32(GAME_BOARD_POS.y) + 120, 100, 40},
         "#94#Dark mode",
         &state.nightMode,
+    )
+    rl.GuiToggle(
+        {25, f32(GAME_BOARD_POS.y) + 180, 100, 40},
+        "#100#Show coords",
+        &state.showCoords,
     )
 }
 
