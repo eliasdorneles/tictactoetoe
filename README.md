@@ -19,14 +19,7 @@ To build and run the desktop version, follow these steps:
 
 1. Install [Odin](https://odin-lang.org/), if you don't have it already.
 
-2. Then, download the submodule deps:
-
-```
-git submodule init
-git submodule update
-```
-
-3. Build and run with: `make run`
+2. Build and run with: `make run`
 
 
 History
