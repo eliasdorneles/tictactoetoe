@@ -7,14 +7,14 @@ import "core:strings"
 import rl "vendor:raylib"
 
 /* BEGIN foreign library declarations */
-LIB_TICTACTOE :: #config(
-    LIB_TICTACTOE,
-    "./tictactoe-lib-rs/tictactoe-lib-rs/target/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a",
-)
 when ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32 {
+    LIB_TICTACTOE :: #config(
+        LIB_TICTACTOE,
+        "./vendor/tictactoe-lib-rs/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a",
+    )
     foreign import lib {LIB_TICTACTOE}
 } else {
-    foreign import lib "../tictactoe-lib-rs/tictactoe-lib-rs/target/release/libtictactoe_lib_rs.a"
+    foreign import lib "../vendor/tictactoe-lib-rs/release/libtictactoe_lib_rs.a"
 }
 
 Case :: enum c.int {

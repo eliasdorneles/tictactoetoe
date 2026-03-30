@@ -23,7 +23,7 @@ ODIN_PATH=$(odin root)
 
 cp $ODIN_PATH/core/sys/wasm/js/odin.js $OUT_DIR
 
-LIB_TICTACTOE_PATH=./tictactoe-lib-rs/tictactoe-lib-rs/target/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a
+LIB_TICTACTOE_PATH=./vendor/tictactoe-lib-rs/wasm32-unknown-unknown/release/libtictactoe_lib_rs.a
 
 files="$OUT_DIR/game.wasm.o ${ODIN_PATH}/vendor/raylib/wasm/libraylib.a ${ODIN_PATH}/vendor/raylib/wasm/libraygui.a ${LIB_TICTACTOE_PATH}"
 

@@ -4,9 +4,9 @@
 DESKTOP_OUT_DIR := build/desktop
 
 COMMON_ASSETS := $(wildcard assets/*.png assets/*.wav)
-COMMON_SOURCES := $(wildcard source/*.odin) .gitmodules
+COMMON_SOURCES := $(wildcard source/*.odin)
 DESKTOP_SOURCES := $(wildcard source/main_desktop/*.odin)
-WEB_SOURCES := $(wildcard source/main_web/*.odin)
+WEB_SOURCES := $(wildcard source/main_web/*.odin) source/main_web/index_template.html
 
 DESKTOP_TARGET := $(DESKTOP_OUT_DIR)/tictactoetoe
 WEB_TARGET :=
