@@ -43,7 +43,7 @@ server: build-web
 clean: ## Delete temporary build directory
 	rm -rf build
 
-release-web: clean build-web
+release-web: clean build-web  ## Build web target and push to gh-pages branch
 	uvx ghp-import -m "Update web build" build/web
 	git push github gh-pages --force
 
